@@ -70,3 +70,7 @@ No cambiar nada que no se pidió: el dueño quiere que la app no se rompa ni cam
 - **Un modal oculto bloqueaba los clics:** `.me-modal` usa `display:flex`, así que hace falta `[hidden]{display:none!important}`.
 - **En el celular la página se desbordaba:** la grilla de 14 días necesita `minmax(0,1fr)`.
 - **Pausa de hábitos:** el cargador tiene que conservar `pausaDesde` y `pausas`.
+- **Un pomodoro que terminó con la app cerrada, otro día, se descartaba:** ahora se suma al día en que terminó (`focoVivo` en widget.js).
+- **Conflicto contra el mismo dispositivo:** si GitHub guardaba pero la respuesta se perdía, la siguiente sincronización pedía elegir. Ahora `meta.tryId` reconoce esa subida como propia.
+- **Tocar algo mientras bajaban datos de la nube los pisaba:** entre que se escriben los datos y la recarga, `frozen` ignora las escrituras hechas con el estado viejo.
+- **El escudo de racha nunca estaba "listo":** `dailyStreakInfo` contaba como usado el día anterior al inicio de la racha.
