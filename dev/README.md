@@ -74,3 +74,9 @@ No cambiar nada que no se pidió: el dueño quiere que la app no se rompa ni cam
 - **Conflicto contra el mismo dispositivo:** si GitHub guardaba pero la respuesta se perdía, la siguiente sincronización pedía elegir. Ahora `meta.tryId` reconoce esa subida como propia.
 - **Tocar algo mientras bajaban datos de la nube los pisaba:** entre que se escriben los datos y la recarga, `frozen` ignora las escrituras hechas con el estado viejo.
 - **El escudo de racha nunca estaba "listo":** `dailyStreakInfo` contaba como usado el día anterior al inicio de la racha.
+
+## Cambios del 9/11/2026
+
+- **Aviso al terminar un bloque de Foco:** `avisarFin` muestra una notificación del sistema si la app no está a la vista (pide permiso la primera vez que se inicia un foco). `focoVigia` usa un Web Worker para terminar el bloque en el segundo exacto aunque la pestaña esté en segundo plano, donde el navegador frena los timers.
+- **Semana de lunes a domingo en toda la app:** `weekStart` ahora devuelve el lunes. Las marcas de hábitos semanales viejas (clave `W` + domingo) se convierten al cargar con `semanasALunes` (en memoria; se guardan con el próximo cambio).
+- **Limpieza:** se quitaron los métodos sin pantalla (lecturas, tareas del día, cadena de identidad) y el bloque inalcanzable del shader de fondo. Los datos `libros`, `ident` y `tarjetas` se siguen conservando en `fusion`.
