@@ -137,6 +137,14 @@ label.c>input,label.c>select,label.c>textarea{margin-top:5px}
 .saldo{font:600 34px var(--num);font-variant-numeric:tabular-nums;margin:2px 0 2px;overflow-wrap:anywhere}
 .aviso{background:var(--sup2);border-radius:11px;padding:10px 12px;font-size:13.5px;color:var(--tenue);margin:10px 0}
 .tostada{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;background:var(--tinta);color:#14161f;padding:10px 16px;border-radius:12px;font-weight:500;max-width:88vw;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.it{display:grid;grid-template-columns:64px 12px 1fr auto 36px;gap:6px;align-items:center;padding:9px 0;border-bottom:1px solid var(--linea)}
+.it:last-child{border-bottom:0}
+.it .itn{grid-column:1/-1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.it input{min-height:40px;padding:8px 10px}
+.it b{font:600 15px var(--num);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:74px;text-align:right}
+#items select{margin-top:8px} #items .tarjeta{background:var(--sup2);margin-top:6px} #items .tarjeta input{background:var(--sup)}
+#itNuevo{grid-template-columns:1fr 104px auto;margin-top:8px}
+input[readonly]{opacity:.85;border-style:dashed}
 svg.linea{display:block;width:100%;height:84px;margin:8px 0 2px}
 
 @media (min-width:900px){
@@ -287,7 +295,7 @@ function pintar(){
 function filaGasto(g,conFecha){
   var c=cat(g.cat);
   return '<button class="fila" data-a="editarGasto" data-id="'+esc(g.id)+'"><span class="em">'+esc(c.emoji)+'</span><span class="med"><div>'+esc(g.nota||c.nombre)+'</div><small>'+
-    esc([g.nota?c.nombre:'',g.medio,g.fijo?'Fijo':'',conFecha?fCorta(g.fecha):''].filter(Boolean).join(', '))+'</small></span><span class="der">'+plata(g.monto)+'</span></button>';
+    esc([g.nota?c.nombre:'',g.items&&g.items.length?g.items.length+(g.items.length===1?' producto':' productos'):'',g.medio,g.fijo?'Fijo':'',conFecha?fCorta(g.fecha):''].filter(Boolean).join(', '))+'</small></span><span class="der">'+plata(g.monto)+'</span></button>';
 }
 function barraPresu(gastado,presu,texto){
   if(!(presu>0))return '';
@@ -404,14 +412,36 @@ function opMedios(sel){return '<option value="">Sin indicar</option>'+MEDIOS.map
 function campoMonto(v,auto){return '<label class="c">Monto<input class="monto" name="monto" inputmode="decimal" autocomplete="off" placeholder="$ 0" value="'+(v?esc(fmtN.format(v)):'')+'"'+(auto?' autofocus':'')+' required></label>'}
 function ultimoMedio(){var g=gastos().sort(function(a,b){return (b.upd||0)-(a.upd||0)})[0];return g?g.medio||'':''}
 
+/* productos del gasto que se está cargando */
+var IT=[],ITL='';
+function totalItems(){return Math.round(IT.reduce(function(t,i){return t+(+i.cant||0)*(+i.precio||0)},0)*100)/100}
+function ultimoPrecio(pid){var h=preciosDe(pid);return h.length?h[h.length-1].monto:0}
+function prodPorNombre(n){n=n.trim();var low=n.toLowerCase();var p=vivos('prods').filter(function(x){return x.nombre.toLowerCase()===low})[0];return p||pon('prods',{nombre:n})}
+function bloqueItems(){
+  var ps=vivos('prods').sort(function(a,b){return a.nombre.localeCompare(b.nombre)}),lugares={};
+  vivos('precios').forEach(function(p){if(p.lugar)lugares[p.lugar]=1});
+  return (IT.length?'<div class="tarjeta">'+IT.map(function(it,i){
+      return '<div class="it"><div class="itn">'+esc(it.nombre)+'</div><input data-i="'+i+'" data-k="cant" inputmode="decimal" autocomplete="off" value="'+esc(fmtN.format(it.cant))+'" aria-label="Cantidad de '+esc(it.nombre)+'">'+
+        '<span class="tenue">×</span><input data-i="'+i+'" data-k="precio" inputmode="decimal" autocomplete="off" value="'+(it.precio?esc(fmtN.format(it.precio)):'')+'" placeholder="Precio" aria-label="Precio de '+esc(it.nombre)+'">'+
+        '<b id="its'+i+'">'+plata((+it.cant||0)*(+it.precio||0))+'</b><button type="button" class="btn pel ch" data-a="itQuita" data-i="'+i+'" aria-label="Quitar '+esc(it.nombre)+'">✕</button></div>'}).join('')+'</div>':'')+
+    '<select id="itAdd" aria-label="Agregar un producto al gasto"><option value="">'+(IT.length?'Agregar otro producto…':'Armar el gasto con productos…')+'</option>'+
+      ps.map(function(p){var u=ultimoPrecio(p.id);return '<option value="'+esc(p.id)+'">'+esc(p.nombre+(u?' ('+plata(u)+')':''))+'</option>'}).join('')+'<option value="__nuevo">Producto nuevo…</option></select>'+
+    '<div id="itNuevo" class="par" hidden><input type="text" id="itNom" maxlength="50" placeholder="Nombre del producto" aria-label="Nombre del producto nuevo"><input id="itPre" inputmode="decimal" autocomplete="off" placeholder="Precio" aria-label="Precio del producto nuevo"><button type="button" class="btn sec" data-a="itNuevo">Agregar</button></div>'+
+    (IT.length?'<div class="nota">El monto es la suma de los productos. Los precios se guardan en el historial de cada producto.</div><label class="c">Dónde compraste (opcional)<input type="text" name="lugar" maxlength="40" list="itLugares" value="'+esc(ITL)+'" placeholder="Ej.: Coto"></label><datalist id="itLugares">'+Object.keys(lugares).map(function(l){return '<option value="'+esc(l)+'">'}).join('')+'</datalist>':'');
+}
+function montoItems(){var m=$('#hoja form[data-f=gasto] [name=monto]');if(!m)return;if(IT.length){m.value=fmtN.format(totalItems());m.readOnly=true}else m.readOnly=false}
+function pintarItems(){var e=$('#items');if(e){e.innerHTML=bloqueItems();montoItems()}}
 function hojaGasto(g){
   var nuevo=!g;g=g||{cat:'c-comida',fecha:hoy(),medio:ultimoMedio(),nota:''};
+  IT=(g.items||[]).map(function(i){return {prod:i.prod,nombre:i.nombre,cant:+i.cant||1,precio:+i.precio||0}});ITL=g.lugar||'';
   abrir(nuevo?'Nuevo gasto':'Editar gasto','<form data-f="gasto" data-id="'+esc(g.id||'')+'">'+campoMonto(g.monto,nuevo)+
+    '<div id="items">'+bloqueItems()+'</div>'+
     '<label class="c">Categoría</label><div class="elige">'+opCats(cat(g.cat).id)+'</div>'+
     '<div class="par"><label class="c">Fecha<input type="date" name="fecha" value="'+esc(g.fecha)+'" required></label><label class="c">Medio de pago<select name="medio">'+opMedios(g.medio)+'</select></label></div>'+
     '<label class="c">Nota (opcional)<input type="text" name="nota" maxlength="80" value="'+esc(g.nota||'')+'" placeholder="Ej.: almuerzo en el comedor"></label>'+
     (g.fijo?'<div class="aviso">Este gasto lo anotó un gasto fijo. Si cambió el precio, corregilo acá y actualizá el fijo para los próximos meses.</div>':'')+
     '<div class="fila-btn"><button class="btn" type="submit">'+(nuevo?'Guardar gasto':'Guardar cambios')+'</button>'+(nuevo?'':'<button class="btn pel" type="button" data-a="borrarGasto" data-id="'+esc(g.id)+'">Borrar</button>')+'</div></form>');
+  montoItems();
 }
 function hojaFijo(f){
   var nuevo=!f;f=f||{cat:'c-suscripciones',frec:'mensual',medio:'',inicio:hoy(),activo:true};
@@ -536,6 +566,10 @@ var A={
   borrarMov:function(d,el){if(!confirma(el,'¿Borrar?'))return;borra('movs',d.id);guardar();hojaPersona(d.p)},
   renombrarPersona:function(d){var p=DB.personas[d.id];abrir('Cambiar nombre','<form data-f="renPersona" data-id="'+esc(d.id)+'"><label class="c">Nombre<input type="text" name="nombre" maxlength="40" value="'+esc(p.nombre)+'" required autofocus></label><div class="fila-btn"><button class="btn" type="submit">Guardar nombre</button></div></form>')},
   borrarPersona:function(d,el){if(!confirma(el))return;vivos('movs').forEach(function(m){if(m.persona===d.id)borra('movs',m.id)});borra('personas',d.id);cerrar();guardar();tostada('Persona borrada')},
+  itQuita:function(d){IT.splice(+d.i,1);pintarItems()},
+  itNuevo:function(){var n=$('#itNom').value.trim(),pr=aNum($('#itPre').value);if(!n){$('#itNom').focus();return}
+    var ex=vivos('prods').filter(function(x){return x.nombre.toLowerCase()===n.toLowerCase()})[0];
+    IT.push({prod:ex?ex.id:null,nombre:ex?ex.nombre:n,cant:1,precio:pr>0?pr:(ex?ultimoPrecio(ex.id):0)});pintarItems()},
   dividir:hojaDividir,
   ajustes:hojaAjustes,
   editarCat:function(d){hojaCat(d.id)},
@@ -547,7 +581,7 @@ var A={
   importar:function(){$('#archivo').click()},
   csv:function(){
     var l=gastos().sort(function(a,b){return a.fecha<b.fecha?-1:1}),q=function(s){return '"'+String(s==null?'':s).replace(/"/g,'""')+'"'};
-    bajar('gastos-'+hoy()+'.csv','﻿'+['Fecha;Monto;Categoría;Medio de pago;Nota;Fijo'].concat(l.map(function(g){return [g.fecha,String(g.monto).replace('.',','),q(cat(g.cat).nombre),q(g.medio),q(g.nota),g.fijo?'sí':'no'].join(';')})).join('\r\n'),'text/csv');
+    bajar('gastos-'+hoy()+'.csv','﻿'+['Fecha;Monto;Categoría;Medio de pago;Nota;Fijo;Productos'].concat(l.map(function(g){return [g.fecha,String(g.monto).replace('.',','),q(cat(g.cat).nombre),q(g.medio),q(g.nota),g.fijo?'sí':'no',q((g.items||[]).map(function(i){return fmtN.format(i.cant)+' x '+i.nombre+' a '+fmtN.format(i.precio)}).join(' | '))].join(';')})).join('\r\n'),'text/csv');
     tostada(l.length+' gastos exportados');}
 };
 function bajar(nombre,texto,tipo){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([texto],{type:tipo+';charset=utf-8'}));a.download=nombre;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500)}
@@ -556,8 +590,19 @@ function bajar(nombre,texto,tipo){var a=document.createElement('a');a.href=URL.c
 function montoDe(o,form){var n=aNum(o.monto);if(!(n>0)){tostada('Poné un monto mayor a cero');var i=form.querySelector('[name=monto]');if(i)i.focus();return null}return n}
 function gastoDeCompra(o,monto,nota){pon('gastos',{monto:monto,cat:o.cat||'c-otros',fecha:o.fecha,medio:o.medio||'',nota:nota})}
 var F={
-  gasto:function(o,form){var n=montoDe(o,form);if(n==null||!esFecha(o.fecha))return;
+  gasto:function(o,form){
+    if(IT.length){if(IT.some(function(i){return !(i.cant>0)||!(i.precio>0)})){tostada('Revisá la cantidad y el precio de cada producto');return}o.monto=fmtN.format(totalItems())}
+    var n=montoDe(o,form);if(n==null||!esFecha(o.fecha))return;
     var g=form.dataset.id?DB.gastos[form.dataset.id]:{};g=Object.assign({},g,{monto:n,cat:o.cat||'c-otros',fecha:o.fecha,medio:o.medio||'',nota:(o.nota||'').trim()});
+    if(IT.length){
+      var lugar=ITL.trim();
+      g.items=IT.map(function(it){
+        var pid=it.prod&&DB.prods[it.prod]&&!DB.prods[it.prod].del?it.prod:prodPorNombre(it.nombre).id;
+        if(!vivos('precios').some(function(p){return p.prod===pid&&p.fecha===o.fecha&&p.monto===it.precio}))pon('precios',{prod:pid,monto:it.precio,lugar:lugar,fecha:o.fecha});
+        return {prod:pid,nombre:it.nombre,cant:it.cant,precio:it.precio}});
+      g.lugar=lugar;
+      if(!g.nota)g.nota=IT.map(function(i){return i.nombre}).join(', ').slice(0,80);
+    }else{delete g.items;delete g.lugar}
     pon('gastos',g);if(mesDe(g.fecha)!==S.mes&&S.tab==='gastos')S.mes=mesDe(g.fecha);cerrar();guardar();tostada(form.dataset.id?'Cambios guardados':'Gasto guardado: '+plata(n))},
   fijo:function(o,form){var n=montoDe(o,form);if(n==null||!esFecha(o.inicio)||!o.nombre.trim())return;
     var f=form.dataset.id?DB.fijos[form.dataset.id]:{activo:true},d=fecha(o.inicio);
@@ -606,13 +651,19 @@ document.addEventListener('submit',function(ev){
 });
 document.addEventListener('input',function(ev){
   var t=ev.target;
-  if(t.id==='q'){S.q=t.value;$('#lista').innerHTML=listaGastos()}
+  if(t.dataset.k&&t.closest('#items')){var it=IT[+t.dataset.i];if(it){var v=aNum(t.value);it[t.dataset.k]=v>0?v:0;$('#its'+t.dataset.i).textContent=plata(it.cant*it.precio);montoItems()}}
+  else if(t.name==='lugar'&&t.closest('#items'))ITL=t.value;
+  else if(t.id==='q'){S.q=t.value;$('#lista').innerHTML=listaGastos()}
   else if(t.id==='pq'){S.pq=t.value;var q=S.pq.trim().toLowerCase();$('#plista').innerHTML=listaProds(vivos('prods').filter(function(p){return !q||p.nombre.toLowerCase().indexOf(q)>=0}).sort(function(a,b){return a.nombre.localeCompare(b.nombre)}))}
   else if(t.form&&t.form.dataset.f==='dividir')textoDividir(t.form);
 });
 document.addEventListener('change',function(ev){
   var t=ev.target;
-  if(t.id==='fcat'){S.fcat=t.value;$('#lista').innerHTML=listaGastos()}
+  if(t.id==='itAdd'){
+    if(t.value==='__nuevo'){$('#itNuevo').hidden=false;$('#itNom').focus()}
+    else if(t.value){var pr=DB.prods[t.value],ya=IT.filter(function(i){return i.prod===pr.id})[0];if(ya)ya.cant=(+ya.cant||0)+1;else IT.push({prod:pr.id,nombre:pr.nombre,cant:1,precio:ultimoPrecio(pr.id)});pintarItems()}
+  }
+  else if(t.id==='fcat'){S.fcat=t.value;$('#lista').innerHTML=listaGastos()}
   else if(t.id==='todo'){S.todo=t.checked;$('#lista').innerHTML=listaGastos()}
   else if(t.id==='compre'){$('#compreMas').hidden=!t.checked}
   else if(t.id==='archivo'&&t.files[0]){var r=new FileReader();r.onload=function(){try{var j=JSON.parse(r.result);if(!j||j.app!=='mis-finanzas'||!j.data)throw 0;combinar(j.data);generarFijos();guardar();hojaAjustes();tostada('Datos importados y combinados con los que tenías')}catch(e){tostada('Ese archivo no es una copia de Mis Finanzas')}};r.readAsText(t.files[0]);t.value=''}
@@ -622,7 +673,10 @@ function textoDividir(form){
   var n=aNum(form.monto.value),c=form.querySelectorAll('[name=con]:checked').length+form.nuevas.value.split(',').filter(function(s){return s.trim()}).length;
   $('#divTexto').textContent=n>0&&c>0?'Entre '+(c+1)+' personas: '+plata(Math.round(n/(c+1)*100)/100)+' cada una. Tu parte se anota como gasto.':'Se divide en partes iguales. Tu parte se anota como gasto.';
 }
-document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&$('#hoja').firstChild)cerrar()});
+document.addEventListener('keydown',function(ev){
+  if(ev.key==='Escape'&&$('#hoja').firstChild)cerrar();
+  else if(ev.key==='Enter'&&ev.target.closest&&ev.target.closest('#items')){ev.preventDefault();if(ev.target.id==='itNom'||ev.target.id==='itPre')A.itNuevo()}
+});
 
 /* ---------- sincronización (Gist privado, combinación automática por registro) ---------- */
 var Y={estado:'',texto:'',ocupado:false,otra:false,t:null,revisado:false};

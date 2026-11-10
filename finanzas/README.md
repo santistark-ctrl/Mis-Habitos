@@ -11,6 +11,7 @@ Vive en la carpeta `finanzas/` del repo de Mis Hábitos y no comparte código co
 
 - **Inicio:** gasto de hoy, de la semana (lunes a domingo) y del mes, presupuesto, saldo de deudas, próximos fijos y últimos gastos. El botón + carga un gasto.
 - **Gastos:** lista por día con búsqueda, filtro por categoría y por mes; resumen con total, comparación con el mes anterior, barras por categoría y presupuestos; dividir un gasto; exportar a planilla (CSV).
+- **Gasto con productos:** al cargar un gasto se pueden elegir productos de Precios (o crear uno nuevo) con cantidad y precio; el monto pasa a ser la suma y queda bloqueado. Se guarda en `gasto.items` (`{prod, nombre, cant, precio}`) y `gasto.lugar`, y cada precio se agrega al historial del producto si no estaba para esa fecha.
 - **Fijos:** suscripciones mensuales o anuales. El día del cobro se anota solo un gasto. Se pueden pausar.
 - **Precios:** productos con historial de precios, variación y comparación entre lugares. "También lo compré" anota el gasto.
 - **Deudas:** personas con saldo (te debe / le debés), préstamos, pagos parciales e historial.
