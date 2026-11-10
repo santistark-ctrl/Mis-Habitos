@@ -396,7 +396,7 @@ V.deudas=function(){
 /* ---------- hojas (formularios) ---------- */
 function abrir(titulo,html){
   $('#hoja').innerHTML='<div class="velo" data-a="velo"><div class="hoja" role="dialog" aria-modal="true" aria-label="'+esc(titulo)+'"><div class="cabeza"><h3>'+esc(titulo)+'</h3><button data-a="cerrar" aria-label="Cerrar">✕</button></div>'+html+'</div></div>';
-  var f=$('#hoja [autofocus]');if(f)setTimeout(function(){try{f.focus()}catch(e){}},60);
+  var f=$('#hoja [autofocus]');if(f){try{f.focus()}catch(e){}}
 }
 function cerrar(){$('#hoja').innerHTML=''}
 function opCats(sel){return cats().map(function(c){return '<label><input type="radio" name="cat" value="'+esc(c.id)+'"'+(c.id===sel?' checked':'')+'><span>'+esc(c.emoji)+' '+esc(c.nombre)+'</span></label>'}).join('')}
