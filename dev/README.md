@@ -36,7 +36,7 @@ No cambiar nada que no se pidió: el dueño quiere que la app no se rompa ni cam
 
 - `v1` hábitos · `fusion` rituales/foco por día/materias/notas · `pomodoro` materias, duración, segundos por materia, historial
 - `juego` · `pausa` · `name` · `wallpaper` · `plan-estudio` (evaluaciones, ajustes, feriados/paros, log)
-- No se sincronizan: `sync-*` (token, gist, meta, backup, dispositivo, usuario), `plan-estudio-ui`, `foco-vivo` (foco en curso, sobrevive a recargas).
+- No se sincronizan: `sync-*` (token, gist, meta, backup, dispositivo, usuario), `plan-estudio-ui`, `foco-vivo` (foco en curso, sobrevive a recargas), `estudio-libre` (sesión libre en curso y modo elegido).
 
 ## Planificador (widget.js)
 
@@ -80,3 +80,9 @@ No cambiar nada que no se pidió: el dueño quiere que la app no se rompa ni cam
 - **Aviso al terminar un bloque de Foco:** `avisarFin` muestra una notificación del sistema si la app no está a la vista (pide permiso la primera vez que se inicia un foco). `focoVigia` usa un Web Worker para terminar el bloque en el segundo exacto aunque la pestaña esté en segundo plano, donde el navegador frena los timers.
 - **Semana de lunes a domingo en toda la app:** `weekStart` ahora devuelve el lunes. Las marcas de hábitos semanales viejas (clave `W` + domingo) se convierten al cargar con `semanasALunes` (en memoria; se guardan con el próximo cambio).
 - **Limpieza:** se quitaron los métodos sin pantalla (lecturas, tareas del día, cadena de identidad) y el bloque inalcanzable del shader de fondo. Los datos `libros`, `ident` y `tarjetas` se siguen conservando en `fusion`.
+
+## Cambios del 14/11/2026
+
+- **Estudio libre en Foco › Estudio:** selector 🍅 Pomodoro / ⏱ Libre. En Libre, un cronómetro cuenta desde 0 sin descansos (Iniciar estudio, Pausar, Continuar). **Terminar y sumar** suma los minutos a la materia elegida (`pomoSeg`), al día en que empezó la sesión (`focoMin` y `foco` +1, con `mutarFusDiaKey`) y al historial como "Sesión libre · materia · N min", que se puede deshacer. Por eso también cuenta en el Plan. ↺ descarta la sesión con doble toque.
+- La sesión en curso se guarda en `estudio-libre`: sobrevive a recargas y no se sincroniza (está en `EXCL` de sync.js). Métodos: `persistLibre`, `libreSeg`, `libreIniciar`, `librePausar`, `libreTerminar`, `libreDescartar`.
+- No se puede iniciar un pomodoro con una sesión libre corriendo, ni al revés.
